@@ -4,13 +4,13 @@
 
 Навчальний застосунок показує склади, їх заповненість і товари. Сторінка розміщення є основою наступного сценарію: користувач вибирає товар, склад, кількість та потрібні місця зберігання й формує локальну заявку. Залишки товарів не змінюються. Дані задані масивами в `src/data/inventory.js`.
 
-З ЛР 1.1 збережені переходи «Головна» — «Про нас», компоненти Hello та Goodbye, кнопка зміни стану й styled-components. Складська тематика додана як розвиток початкового навчального застосунку.
+Застосунок поділено на сторінки огляду складів, каталогу товарів, розміщення та опису системи. Спільний каркас, навігація, секції й поля форми винесені в окремі компоненти. Для оформлення використано styled-components.
 
 ## Сторінки і сценарії
 
 | Сторінка | Маршрут | Дії користувача |
 |---|---|---|
-| HomePage | / | Перегляд складів, місткості, зайнятих і вільних місць; перевірка початкової кнопки зміни тексту |
+| HomePage | / | Перегляд складів, місткості, зайнятих і вільних місць |
 | ProductsPage | /products | Перегляд товарів, залишків і їх розміщення на різних складах |
 | PlacementPage | /placement | Вибір товару та складу, введення кількості й місць, формування навчальної заявки |
 | AboutPage | /about | Перегляд опису призначення системи |
@@ -46,7 +46,7 @@ flowchart TD
     WarehouseCard --> CapacityBadge
 ```
 
-HomePage поєднує компоненти, WarehouseList відповідає за перебір масиву, WarehouseCard відображає один склад, CapacityBadge визначає напис і колір заповненості. Окрема Section «Демонстрація стану» містить Hello, Goodbye, StateMessage і AppButton. Стан кнопки зберігає HomePage; StateMessage отримує тільки changed.
+HomePage поєднує компоненти загальної інформації та списку складів. WarehouseList відповідає за перебір масиву, WarehouseCard відображає один склад, CapacityBadge визначає напис і колір індикатора заповненості.
 
 ## Товари та форма
 
@@ -91,10 +91,10 @@ FormField повторюється для двох select і двох input. О�
 | FormField | id: string; label: string; hint?: string; children: ReactNode | Дочірній input/select має такий самий id; для hint поле задає aria-describedby як id-hint |
 | AppButton | type = button; onClick?: function; disabled = false; children: ReactNode | Для форми задається type=submit; кнопка показує children |
 | EmptyState | message: string = Дані відсутні | Універсальне повідомлення для відсутніх даних |
-| StateMessage | changed: boolean | Виводить початковий або змінений текст; стан не змінює |
-| HomePage | warehouses: Warehouse[] | Створює композицію головної сторінки і містить стан початкової кнопки |
+| HomePage | warehouses: Warehouse[] | Створює композицію головної сторінки із загальною інформацією та списком складів |
 | ProductsPage | products: Product[] | Компонент сторінки передає дані списку |
 | PlacementPage | products: Product[]; warehouses: Warehouse[] | Зберігає останню сформовану заявку в локальному стані |
+| AboutPage | Власні вхідні props не використовуються | Відображає опис призначення системи |
 
 ## Композиція через children
 
@@ -120,7 +120,6 @@ FormField надає підпис і структуру поля. Конкрет
 |---|---|---|
 | Section | Список складів на HomePage | Каталог на ProductsPage та форма на PlacementPage |
 | CapacityBadge | WarehouseCard під час перегляду складів | PlacementForm після вибору складу |
-| AppButton | HomePage для зміни тексту | PlacementForm для формування заявки |
 | EmptyState | WarehouseList, якщо складів немає | ProductList, ProductCard і PlacementForm для відсутніх даних |
 | FormField | Вибір товару і складу | Введення кількості товару і потрібних місць |
 
@@ -131,10 +130,10 @@ FormField надає підпис і структуру поля. Конкрет
 | Завдання ЛР 1.2 | Реалізація |
 |---|---|
 | 1 Аналіз та ієрархія | Сценарії, таблиця сторінок і схеми в цьому файлі |
-| 2 Спільне компонування | AppLayout, SiteHeader, MainNav; збережені початкові маршрути й кнопка |
+| 2 Спільне компонування | AppLayout, SiteHeader, MainNav; спільний каркас і працездатна навігація між сторінками |
 | 3 Сторінка список картка | HomePage → WarehouseList → WarehouseCard; ProductsPage → ProductList → ProductCard |
 | 4 Props і children | Контракти props; AppLayout, Section, FormField, AppButton |
-| 5 Повторне використання й наступна сторінка | Section, CapacityBadge, AppButton; PlacementPage із макетом форми |
+| 5 Повторне використання й наступна сторінка | Section, CapacityBadge, FormField, EmptyState; PlacementPage із макетом форми |
 | 6 React Bootstrap | Ознайомлення з документацією і прикладом Button; вибрано наявний styled-components |
 | 7 Перевірка і Git | Сценарії в README; цей файл оновлює архітектурні матеріали; commit і push виконує власник репозиторію після інтеграції |
 
