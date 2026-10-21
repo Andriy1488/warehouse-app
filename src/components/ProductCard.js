@@ -3,9 +3,14 @@ import { Card, MutedText } from '../styles/ui';
 import StockBadge from './StockBadge';
 import EmptyState from './EmptyState';
 import AppButton from './AppButton';
+import { Link } from 'react-router-dom';
+
+
 
 export default function ProductCard({ product, selected, onSelect }) {
   const [detailsOpen, setDetailsOpen] = useState(false);
+
+  <MutedText>Артикул: {product.sku}</MutedText>
 
   const quantity = product.placements.reduce(
     (sum, placement) => sum + placement.quantity,
@@ -19,6 +24,9 @@ export default function ProductCard({ product, selected, onSelect }) {
 
       <p>
         <StockBadge quantity={quantity} unit={product.unit} />
+      </p>
+      <p>
+        <Link to={`/products/${product.id}`}>Детальніше про товар</Link>
       </p>
 
       <p>{selected ? '✓ Товар вибрано' : 'Товар не вибрано'}</p>

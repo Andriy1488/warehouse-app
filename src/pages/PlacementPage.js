@@ -3,6 +3,7 @@ import Section from '../components/Section';
 import PlacementForm from '../components/PlacementForm';
 import { useProductSelection } from '../context/ProductSelectionContext';
 import { MutedText } from '../styles/ui';
+import { useSearchParams } from 'react-router-dom';
 
 const emptyDraft = {
   warehouseId: '',
@@ -11,8 +12,18 @@ const emptyDraft = {
 };
 
 export default function PlacementPage({ products, warehouses }) {
-  const { selectedProductId, setSelectedProductId } =
-    useProductSelection();
+  const {
+  selectedProductId: rememberedProductId,
+  setSelectedProductId,
+} = useProductSelection();
+
+const [searchParams, setSearchParams] = useSearchParams();
+
+const selectedProductId = searchParams.has('productId')
+  ? products.find(
+      (item) => item.id === searchParams.get('productId')
+    )?.id ?? null
+  : rememberedProductId;
 
   const [draft, setDraft] = useState(emptyDraft);
   const [request, setRequest] = useState(null);
@@ -50,6 +61,15 @@ export default function PlacementPage({ products, warehouses }) {
     if (nextId === selectedProductId) return;
 
     setSelectedProductId(nextId);
+    const nextSearchParams = new URLSearchParams(searchParams);
+
+    if (nextId) {
+      nextSearchParams.set('productId', nextId);
+    } else {
+      nextSearchParams.delete('productId');
+    }
+
+    setSearchParams(nextSearchParams, { replace: true });
     setDraft(emptyDraft);
     setRequest(null);
   }

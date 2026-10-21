@@ -1,4 +1,5 @@
 import React from 'react';
+import { Outlet } from 'react-router-dom';
 import styled from 'styled-components';
 import SiteHeader from './SiteHeader';
 import GlobalStyle from '../styles/GlobalStyle';
@@ -14,7 +15,7 @@ export default function AppLayout({ title, links, children }) {
     <>
       <GlobalStyle />
       <SiteHeader title={title} links={links} />
-      <Main id="main-content">{children}</Main>
+      <Main id="main-content">{children ?? <Outlet />}</Main>
     </>
   );
 }
