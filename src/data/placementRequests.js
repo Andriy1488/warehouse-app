@@ -5,6 +5,7 @@ export const placementRequests = [
     warehouseId: 'w1',
     quantity: 120,
     positions: 15,
+    note: 'Розмістити партію цегли на Центральному складі.',
   },
   {
     id: 'pl2',
@@ -12,5 +13,6 @@ export const placementRequests = [
     warehouseId: 'w2',
     quantity: 80,
     positions: 10,
+    note: 'Розмістити партію цементу на Південному складі.',
   },
 ];

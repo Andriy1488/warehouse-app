@@ -1,39 +1,44 @@
-BrowserRouter
-└── App
-    └── AppLayout
-        ├── GlobalStyle
-        ├── SiteHeader
-        │   └── MainNav
-        └── main (#main-content)
-            └── Routes
-                ├── HomePage
-                │   ├── Section (#summary)
-                │   │   └── WarehouseSummary
-                │   └── Section (#warehouses)
-                │       └── WarehouseList
-                │           ├── WarehouseCard (для кожного складу)
-                │           │   └── CapacityBadge
-                │           └── EmptyState (якщо список порожній)
-                ├── ProductsPage
-                │   └── Section (#products)
-                │       └── ProductList
-                │           ├── ProductCard (для кожного товару)
-                │           │   ├── StockBadge
-                │           │   └── EmptyState (якщо немає розміщень)
-                │           └── EmptyState (якщо список порожній)
-                ├── PlacementPage
-                │   └── Section (#placement)
-                │       └── PlacementForm
-                │           ├── FormField (товар)
-                │           │   └── select
-                │           ├── FormField (склад)
-                │           │   └── select
-                │           ├── CapacityBadge (якщо склад вибрано)
-                │           ├── FormField (кількість товару)
-                │           │   └── input
-                │           ├── FormField (місця зберігання)
-                │           │   └── input
-                │           ├── AppButton
-                │           └── EmptyState (якщо немає товарів або складів)
-                └── AboutPage
-                    └── Section (#about)
+React.StrictMode
+└── BrowserRouter
+    └── App
+        └── ProductSelectionProvider
+            └── PlacementRequestsProvider
+                └── AppRoutes
+                    └── Routes
+                        └── AppLayout
+                            ├── GlobalStyle
+                            ├── SiteHeader
+                            │   └── MainNav
+                            └── main (#main-content)
+                                ├── HomePage
+                                │   ├── WarehouseSummary
+                                │   └── WarehouseList
+                                │       ├── WarehouseCard
+                                │       │   └── CapacityBadge
+                                │       └── EmptyState
+                                ├── ProductsPage
+                                │   └── ProductList
+                                │       ├── ProductCard
+                                │       │   └── StockBadge
+                                │       └── EmptyState
+                                ├── ProductDetailsPage
+                                ├── PlacementsPage
+                                │   ├── Пошук, фільтр і сортування
+                                │   └── Список заявок / EmptyState
+                                ├── PlacementPage
+                                │   └── Section
+                                │       └── PlacementForm
+                                │           ├── FormField (товар)
+                                │           ├── FormField (склад)
+                                │           ├── CapacityBadge
+                                │           ├── FormField (кількість)
+                                │           ├── FormField (місця)
+                                │           ├── FormField (примітка)
+                                │           └── AppButton
+                                ├── PlacementDetailsPage
+                                │   └── AppButton (видалення)
+                                ├── PlacementEditPage
+                                │   └── PlacementEditor
+                                │       └── PlacementForm
+                                ├── AboutPage
+                                └── NotFoundPage

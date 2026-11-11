@@ -4,6 +4,7 @@ import FormField from './FormField';
 import AppButton from './AppButton';
 import CapacityBadge from './CapacityBadge';
 import EmptyState from './EmptyState';
+import { validatePlacementRequest } from '../domain/placementValidation';
 
 const Form = styled.form`
   max-width: 600px;
@@ -11,6 +12,11 @@ const Form = styled.form`
   border: 1px solid #dbe3ee;
   border-radius: 12px;
   background: white;
+`;
+
+const ErrorText = styled.p`
+  margin: 4px 0 16px;
+  color: #b42318;
 `;
 
 export default function PlacementForm({
@@ -23,7 +29,7 @@ export default function PlacementForm({
   onClear,
   onSubmit,
 }) {
-  const [error, setError] = useState('');
+  const [errors, setErrors] = useState({});
 
   const product = products.find((item) => item.id === selectedProductId);
   const warehouse = warehouses.find(
@@ -36,36 +42,19 @@ export default function PlacementForm({
   function handleSubmit(event) {
     event.preventDefault();
 
-    const count = Number(draft.quantity);
-    const places = Number(draft.positions);
+    const result = validatePlacementRequest(
+      { productId: selectedProductId, ...draft },
+      products,
+      warehouses
+    );
 
-    if (!product || !warehouse) {
-      setError('Виберіть товар і склад.');
+    if (!result.ok) {
+      setErrors(result.errors);
       return;
     }
 
-    if (
-      !Number.isSafeInteger(count) ||
-      count <= 0 ||
-      !Number.isSafeInteger(places) ||
-      places <= 0
-    ) {
-      setError('Кількість товару й місць має бути додатним цілим числом.');
-      return;
-    }
-
-    if (places > freePositions) {
-      setError(`На цьому складі доступно лише ${freePositions} місць.`);
-      return;
-    }
-
-    setError('');
-    onSubmit({
-      productId: selectedProductId,
-      warehouseId: draft.warehouseId,
-      quantity: count,
-      positions: places,
-    });
+    setErrors({});
+    onSubmit(result.value);
   }
 
   if (products.length === 0 || warehouses.length === 0) {
@@ -75,14 +64,16 @@ export default function PlacementForm({
   }
 
   return (
-    <Form onSubmit={handleSubmit}>
+    <Form onSubmit={handleSubmit} noValidate>
       <FormField id="product" label="Товар">
         <select
           id="product"
           value={selectedProductId || ''}
+          aria-invalid={Boolean(errors.productId)}
+          aria-describedby={errors.productId ? 'product-error' : undefined}
           onChange={(event) => {
             onSelectProduct(event.target.value);
-            setError('');
+            setErrors({});
           }}
           required
         >
@@ -94,14 +85,21 @@ export default function PlacementForm({
           ))}
         </select>
       </FormField>
+      {errors.productId && (
+        <ErrorText id="product-error" role="alert">
+          {errors.productId}
+        </ErrorText>
+      )}
 
       <FormField id="warehouse" label="Склад">
         <select
           id="warehouse"
           value={draft.warehouseId}
+          aria-invalid={Boolean(errors.warehouseId)}
+          aria-describedby={errors.warehouseId ? 'warehouse-error' : undefined}
           onChange={(event) => {
             onDraftChange('warehouseId', event.target.value);
-            setError('');
+            setErrors({});
           }}
           required
         >
@@ -113,6 +111,11 @@ export default function PlacementForm({
           ))}
         </select>
       </FormField>
+      {errors.warehouseId && (
+        <ErrorText id="warehouse-error" role="alert">
+          {errors.warehouseId}
+        </ErrorText>
+      )}
 
       {warehouse && (
         <p>
@@ -127,9 +130,11 @@ export default function PlacementForm({
 
       <FormField
         id="quantity"
-        label={product
-          ? `Кількість товару (${product.unit})`
-          : 'Кількість товару'}
+        label={
+          product
+            ? `Кількість товару (${product.unit})`
+            : 'Кількість товару'
+        }
       >
         <input
           id="quantity"
@@ -137,13 +142,20 @@ export default function PlacementForm({
           min="1"
           step="1"
           value={draft.quantity}
+          aria-invalid={Boolean(errors.quantity)}
+          aria-describedby={errors.quantity ? 'quantity-error' : undefined}
           onChange={(event) => {
             onDraftChange('quantity', event.target.value);
-            setError('');
+            setErrors({});
           }}
           required
         />
       </FormField>
+      {errors.quantity && (
+        <ErrorText id="quantity-error" role="alert">
+          {errors.quantity}
+        </ErrorText>
+      )}
 
       <FormField
         id="positions"
@@ -152,27 +164,55 @@ export default function PlacementForm({
       >
         <input
           id="positions"
-          aria-describedby="positions-hint"
           type="number"
           min="1"
           step="1"
           value={draft.positions}
+          aria-invalid={Boolean(errors.positions)}
+          aria-describedby={
+            errors.positions
+              ? 'positions-hint positions-error'
+              : 'positions-hint'
+          }
           onChange={(event) => {
             onDraftChange('positions', event.target.value);
-            setError('');
+            setErrors({});
           }}
           required
         />
       </FormField>
+      {errors.positions && (
+        <ErrorText id="positions-error" role="alert">
+          {errors.positions}
+        </ErrorText>
+      )}
 
-      {error && <p role="alert">{error}</p>}
+      <FormField id="note" label="Примітка до заявки">
+        <textarea
+          id="note"
+          rows={4}
+          value={draft.note ?? ''}
+          aria-invalid={Boolean(errors.note)}
+          aria-describedby={errors.note ? 'note-error' : undefined}
+          onChange={(event) => {
+            onDraftChange('note', event.target.value);
+            setErrors({});
+          }}
+          required
+        />
+      </FormField>
+      {errors.note && (
+        <ErrorText id="note-error" role="alert">
+          {errors.note}
+        </ErrorText>
+      )}
 
       <AppButton type="submit">Сформувати заявку</AppButton>{' '}
       <AppButton
         type="button"
         onClick={() => {
           onClear();
-          setError('');
+          setErrors({});
         }}
       >
         Очистити поля

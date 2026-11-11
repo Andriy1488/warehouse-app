@@ -1,20 +1,30 @@
 import React, { useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import PlacementForm from '../components/PlacementForm';
+import { usePlacementRequests } from '../context/PlacementRequestsContext';
 
 function PlacementEditor({ request, products, warehouses }) {
-  const [selectedProductId, setSelectedProductId] = useState(request.productId);
+  const navigate = useNavigate();
+  const { updateRequest } = usePlacementRequests();
+
+  const [selectedProductId, setSelectedProductId] = useState(
+    request.productId
+  );
   const [draft, setDraft] = useState({
     warehouseId: request.warehouseId,
     quantity: String(request.quantity),
     positions: String(request.positions),
+    note: request.note ?? '',
   });
-  const [preview, setPreview] = useState(null);
 
   function handleSelectProduct(id) {
     setSelectedProductId(id || null);
-    setDraft({ warehouseId: '', quantity: '', positions: '' });
-    setPreview(null);
+    setDraft({
+      warehouseId: '',
+      quantity: '',
+      positions: '',
+      note: '',
+    });
   }
 
   function handleDraftChange(field, value) {
@@ -22,22 +32,39 @@ function PlacementEditor({ request, products, warehouses }) {
       ...previous,
       [field]: value,
     }));
-    setPreview(null);
   }
 
   function handleClear() {
-    setDraft({ warehouseId: '', quantity: '', positions: '' });
-    setPreview(null);
+    setDraft({
+      warehouseId: '',
+      quantity: '',
+      positions: '',
+      note: '',
+    });
   }
 
-  const product = products.find((item) => item.id === selectedProductId);
-  const warehouse = warehouses.find((item) => item.id === draft.warehouseId);
+  function handleSubmit(value) {
+    const result = updateRequest(request.id, value);
+
+    if (result.ok) {
+      navigate('/placements', {
+        state: { notice: `Заявку ${request.id} оновлено.` },
+      });
+    }
+  }
+
+  const product = products.find(
+    (item) => item.id === selectedProductId
+  );
+  const warehouse = warehouses.find(
+    (item) => item.id === draft.warehouseId
+  );
 
   return (
     <>
       <Link to="/placements">← До списку заявок</Link>
       <h1>Редагування заявки {request.id}</h1>
-      <p>Поля заповнено з демонстраційного запису. Зміни поки не зберігаються.</p>
+      <p>Після збереження зміни з’являться у списку заявок.</p>
 
       <PlacementForm
         products={products}
@@ -47,7 +74,7 @@ function PlacementEditor({ request, products, warehouses }) {
         draft={draft}
         onDraftChange={handleDraftChange}
         onClear={handleClear}
-        onSubmit={setPreview}
+        onSubmit={handleSubmit}
       />
 
       <h2>Підсумок чернетки</h2>
@@ -55,17 +82,16 @@ function PlacementEditor({ request, products, warehouses }) {
       <p>Склад: {warehouse?.name || 'не вибрано'}</p>
       <p>Кількість: {draft.quantity || 'не вказано'}</p>
       <p>Місць зберігання: {draft.positions || 'не вказано'}</p>
-
-      {preview && (
-        <p role="status">
-          Дані форми перевірено. Демонстраційна заявка не змінена.
-        </p>
-      )}
+      <p>Примітка: {draft.note || 'не вказано'}</p>
     </>
   );
 }
 
-export default function PlacementEditPage({ requests, products, warehouses }) {
+export default function PlacementEditPage({
+  requests,
+  products,
+  warehouses,
+}) {
   const { placementId } = useParams();
   const request = requests.find((item) => item.id === placementId);
 
