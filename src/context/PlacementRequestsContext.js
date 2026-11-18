@@ -1,72 +1,89 @@
-import React, { createContext, useContext, useRef, useState } from 'react';
-import { placementRequests } from '../data/placementRequests';
-import { validatePlacementRequest } from '../domain/placementValidation';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
+import { requestService as service } from '../services/requestService';
+import { errorMessage } from '../services/ServiceError';
 
 const PlacementRequestsContext = createContext(null);
 
-export function PlacementRequestsProvider({
-  products,
-  warehouses,
-  children,
-}) {
-  const [requests, setRequests] = useState(() =>
-    placementRequests.map((request) => ({ ...request }))
-  );
+export function PlacementRequestsProvider({ children }) {
+  const [requests, setRequests] = useState([]);
+  const [status, setStatus] = useState('loading');
+  const [loadError, setLoadError] = useState('');
+  const activeRead = useRef(null);
 
-  const nextId = useRef(
-    Math.max(
-      0,
-      ...placementRequests.map((request) => Number(request.id.slice(2)) || 0)
-    ) + 1
-  );
+  const reload = useCallback(async () => {
+    activeRead.current?.abort();
 
-  function createRequest(draft) {
-    const result = validatePlacementRequest(draft, products, warehouses);
-    if (!result.ok) return result;
+    const controller = new AbortController();
+    activeRead.current = controller;
 
-    const record = {
-      id: `pl${nextId.current++}`,
-      ...result.value,
-    };
+    setStatus('loading');
+    setLoadError('');
 
-    setRequests((current) => [...current, record]);
-    return { ok: true, record };
+    try {
+      const records = await service.getAll({ signal: controller.signal });
+
+      if (controller.signal.aborted) return;
+
+      setRequests(records);
+      setStatus('success');
+    } catch (error) {
+      if (controller.signal.aborted) return;
+
+      setLoadError(errorMessage(error));
+      setStatus('error');
+    }
+  }, []);
+
+  useEffect(() => {
+    reload();
+    return () => activeRead.current?.abort();
+  }, [reload]);
+
+  // Спочатку чекаємо підтвердження запису, потім оновлюємо список.
+  async function saveChange(operation) {
+    try {
+      const record = await operation();
+      await reload();
+      return { ok: true, record };
+    } catch (error) {
+      return {
+        ok: false,
+        message: errorMessage(error),
+        errors: error.errors || {},
+      };
+    }
   }
 
-  function updateRequest(id, draft) {
-    const existing = requests.find((request) => request.id === id);
-    if (!existing) {
-      return { ok: false, message: 'Заявку не знайдено.' };
-    }
+  function createRequest(input) {
+    return saveChange(() => service.create(input));
+  }
 
-    const result = validatePlacementRequest(draft, products, warehouses);
-    if (!result.ok) return result;
-
-    const record = { ...existing, ...result.value, id };
-
-    setRequests((current) =>
-      current.map((request) => (request.id === id ? record : request))
-    );
-
-    return { ok: true, record };
+  function updateRequest(id, input) {
+    return saveChange(() => service.update(id, input));
   }
 
   function deleteRequest(id) {
-    const existing = requests.find((request) => request.id === id);
-    if (!existing) {
-      return { ok: false, message: 'Заявку не знайдено.' };
-    }
-
-    setRequests((current) =>
-      current.filter((request) => request.id !== id)
-    );
-
-    return { ok: true, record: existing };
+    return saveChange(() => service.delete(id));
   }
 
   return (
     <PlacementRequestsContext.Provider
-      value={{ requests, createRequest, updateRequest, deleteRequest }}
+      value={{
+        requests,
+        status,
+        loadError,
+        reload,
+        createRequest,
+        updateRequest,
+        deleteRequest,
+      }}
     >
       {children}
     </PlacementRequestsContext.Provider>

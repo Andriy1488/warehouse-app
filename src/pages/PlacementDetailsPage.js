@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import AppButton from '../components/AppButton';
 import { usePlacementRequests } from '../context/PlacementRequestsContext';
@@ -10,25 +10,58 @@ export default function PlacementDetailsPage({
 }) {
   const { placementId } = useParams();
   const navigate = useNavigate();
-  const { deleteRequest } = usePlacementRequests();
+  const { deleteRequest, status, loadError, reload } =
+  usePlacementRequests();
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
   const request = requests.find((item) => item.id === placementId);
 
-  function handleDelete() {
-    const confirmed = window.confirm(
-      `Видалити заявку ${placementId}?`
-    );
+        async function handleDelete() {
+        if (isDeleting) return;
 
-    if (!confirmed) return;
+        const confirmed = window.confirm(
+          `Видалити заявку ${placementId}?`
+        );
 
-    const result = deleteRequest(placementId);
+        if (!confirmed) return;
 
-    if (result.ok) {
-      navigate('/placements', {
-        state: { notice: `Заявку ${placementId} видалено.` },
-      });
-    }
-  }
+        setIsDeleting(true);
+        setDeleteError('');
+
+        try {
+          const result = await deleteRequest(placementId);
+
+          if (!result.ok) {
+            setDeleteError(result.message || 'Не вдалося видалити заявку.');
+            return;
+          }
+
+          navigate('/placements', {
+            state: { notice: `Заявку ${placementId} видалено.` },
+          });
+        } catch {
+          setDeleteError('Не вдалося видалити заявку. Спробуйте ще раз.');
+        } finally {
+          setIsDeleting(false);
+        }
+}
+      if (status === 'loading') {
+        return <p role="status">Завантажуємо заявку…</p>;
+      }
+
+      if (status === 'error') {
+        return (
+          <>
+            <p role="alert">
+              Не вдалося завантажити заявку. {loadError}
+            </p>
+            <button type="button" onClick={reload}>
+              Спробувати ще раз
+            </button>
+          </>
+        );
+      }
 
   if (!request) {
     return (
@@ -62,9 +95,17 @@ export default function PlacementDetailsPage({
       <Link to={`/placements/${request.id}/edit`}>
         Редагувати заявку
       </Link>{' '}
-      <AppButton type="button" onClick={handleDelete}>
-        Видалити заявку
-      </AppButton>
+      <fieldset
+          disabled={isDeleting}
+          style={{ border: 0, margin: 0, padding: 0 }}
+        >
+          <AppButton type="button" onClick={handleDelete}>
+            Видалити заявку
+          </AppButton>
+        </fieldset>
+
+        {isDeleting && <p role="status">Видаляємо заявку…</p>}
+        {deleteError && <p role="alert">{deleteError}</p>}
     </>
   );
 }

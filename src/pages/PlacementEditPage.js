@@ -6,6 +6,8 @@ import { usePlacementRequests } from '../context/PlacementRequestsContext';
 function PlacementEditor({ request, products, warehouses }) {
   const navigate = useNavigate();
   const { updateRequest } = usePlacementRequests();
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
 
   const [selectedProductId, setSelectedProductId] = useState(
     request.productId
@@ -43,39 +45,60 @@ function PlacementEditor({ request, products, warehouses }) {
     });
   }
 
-  function handleSubmit(value) {
-    const result = updateRequest(request.id, value);
+  async function handleSubmit(value) {
+  if (isSaving) return;
 
-    if (result.ok) {
-      navigate('/placements', {
-        state: { notice: `Заявку ${request.id} оновлено.` },
-      });
+  setIsSaving(true);
+  setSaveError('');
+
+  try {
+    const result = await updateRequest(request.id, value);
+
+    if (!result.ok) {
+      setSaveError(result.message || 'Не вдалося оновити заявку.');
+      return;
     }
+
+    navigate('/placements', {
+      state: { notice: `Заявку ${request.id} оновлено.` },
+    });
+  } catch {
+    setSaveError('Не вдалося оновити заявку. Спробуйте ще раз.');
+  } finally {
+    setIsSaving(false);
   }
+}
+const product = products.find(
+  (item) => item.id === selectedProductId
+);
 
-  const product = products.find(
-    (item) => item.id === selectedProductId
-  );
-  const warehouse = warehouses.find(
-    (item) => item.id === draft.warehouseId
-  );
-
+const warehouse = warehouses.find(
+  (item) => item.id === draft.warehouseId
+);
   return (
     <>
       <Link to="/placements">← До списку заявок</Link>
       <h1>Редагування заявки {request.id}</h1>
       <p>Після збереження зміни з’являться у списку заявок.</p>
 
-      <PlacementForm
-        products={products}
-        warehouses={warehouses}
-        selectedProductId={selectedProductId}
-        onSelectProduct={handleSelectProduct}
-        draft={draft}
-        onDraftChange={handleDraftChange}
-        onClear={handleClear}
-        onSubmit={handleSubmit}
-      />
+      <fieldset
+  disabled={isSaving}
+  style={{ border: 0, margin: 0, padding: 0 }}
+>
+        <PlacementForm
+          products={products}
+          warehouses={warehouses}
+          selectedProductId={selectedProductId}
+          onSelectProduct={handleSelectProduct}
+          draft={draft}
+          onDraftChange={handleDraftChange}
+          onClear={handleClear}
+          onSubmit={handleSubmit}
+        />
+      </fieldset>
+
+      {isSaving && <p role="status">Зберігаємо зміни…</p>}
+      {saveError && <p role="alert">{saveError}</p>}
 
       <h2>Підсумок чернетки</h2>
       <p>Товар: {product?.name || 'не вибрано'}</p>
@@ -93,7 +116,25 @@ export default function PlacementEditPage({
   warehouses,
 }) {
   const { placementId } = useParams();
+  const { status, loadError, reload } = usePlacementRequests();
   const request = requests.find((item) => item.id === placementId);
+
+  if (status === 'loading') {
+  return <p role="status">Завантажуємо заявку…</p>;
+}
+
+if (status === 'error') {
+  return (
+    <>
+      <p role="alert">
+        Не вдалося завантажити заявку. {loadError}
+      </p>
+      <button type="button" onClick={reload}>
+        Спробувати ще раз
+      </button>
+    </>
+  );
+}
 
   if (!request) {
     return (

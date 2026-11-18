@@ -32,6 +32,11 @@ export default function PlacementPage({ products, warehouses }) {
 
   const [draft, setDraft] = useState(emptyDraft);
 
+  const [isSaving, setIsSaving] = useState(false);
+      
+  const [saveError, setSaveError] = useState('');
+
+
   const selectedProduct = products.find(
     (item) => item.id === selectedProductId
   );
@@ -81,35 +86,57 @@ export default function PlacementPage({ products, warehouses }) {
     setDraft(emptyDraft);
   }
 
-  function handleSubmit(value) {
-    const result = createRequest(value);
+  async function handleSubmit(value) {
+  if (isSaving) return;
 
-    if (result.ok) {
-      navigate('/placements', {
-        state: { notice: `Заявку ${result.record.id} створено.` },
-      });
+  setIsSaving(true);
+  setSaveError('');
+
+  try {
+    const result = await createRequest(value);
+
+    if (!result.ok) {
+      setSaveError(result.message || 'Не вдалося зберегти заявку.');
+      return;
     }
+
+    navigate('/placements', {
+      state: { notice: `Заявку ${result.record.id} створено.` },
+    });
+  } catch {
+    setSaveError('Не вдалося зберегти заявку. Спробуйте ще раз.');
+  } finally {
+    setIsSaving(false);
   }
+}
 
   return (
     <>
       <h1>Розміщення товару</h1>
       <MutedText>
-        Заявки зберігаються в пам’яті сторінки до її оновлення.
-        Залишки товарів на складах не змінюються.
+        Заявки зберігаються в цьому браузері й залишаються після оновлення сторінки.
       </MutedText>
 
       <Section id="placement" title="Нова заявка">
-        <PlacementForm
-          products={products}
-          warehouses={warehouses}
-          selectedProductId={selectedProductId}
-          onSelectProduct={handleSelectProduct}
-          draft={draft}
-          onDraftChange={handleDraftChange}
-          onClear={handleClear}
-          onSubmit={handleSubmit}
-        />
+        
+        <fieldset
+              disabled={isSaving}
+              style={{ border: 0, margin: 0, padding: 0 }}
+            >
+              <PlacementForm
+                products={products}
+                warehouses={warehouses}
+                selectedProductId={selectedProductId}
+                onSelectProduct={handleSelectProduct}
+                draft={draft}
+                onDraftChange={handleDraftChange}
+                onClear={handleClear}
+                onSubmit={handleSubmit}
+              />
+            </fieldset>
+
+                  {isSaving && <p role="status">Зберігаємо заявку…</p>}
+                  {saveError && <p role="alert">{saveError}</p>}
 
         <div style={{ marginTop: 24 }}>
           <h3>Підсумок чернетки</h3>

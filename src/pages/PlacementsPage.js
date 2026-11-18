@@ -2,10 +2,18 @@ import React from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import Section from '../components/Section';
 import EmptyState from '../components/EmptyState';
+import { usePlacementRequests } from '../context/PlacementRequestsContext';
 
-export default function PlacementsPage({ requests, products, warehouses }) {
+
+export default function PlacementsPage({
+  requests,
+  products,
+  warehouses,
+}) {
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
+
+  const { status, loadError, reload } = usePlacementRequests();
 
   const query = searchParams.get('q') || '';
   const warehouseId = searchParams.get('warehouse') || '';
@@ -28,6 +36,7 @@ export default function PlacementsPage({ requests, products, warehouses }) {
       const product = products.find(
         (item) => item.id === request.productId
       );
+
       const warehouse = warehouses.find(
         (item) => item.id === request.warehouseId
       );
@@ -45,6 +54,7 @@ export default function PlacementsPage({ requests, products, warehouses }) {
       const matchesSearch = searchableText.includes(
         query.trim().toLocaleLowerCase('uk')
       );
+
       const matchesWarehouse =
         !warehouseId || request.warehouseId === warehouseId;
 
@@ -62,16 +72,44 @@ export default function PlacementsPage({ requests, products, warehouses }) {
       return 0;
     });
 
+  if (status === 'loading') {
+    return (
+      <>
+        <h1>Заявки на розміщення</h1>
+        <p role="status">Завантажуємо заявки…</p>
+      </>
+    );
+  }
+
+  if (status === 'error') {
+    return (
+      <>
+        <h1>Заявки на розміщення</h1>
+
+        <p role="alert">
+          Не вдалося завантажити заявки. {loadError}
+        </p>
+
+        <button type="button" onClick={reload}>
+          Спробувати ще раз
+        </button>
+      </>
+    );
+  }
+
   return (
     <>
+    
       <h1>Заявки на розміщення</h1>
+      
 
       {location.state?.notice && (
         <p role="status">{location.state.notice}</p>
       )}
 
       <p>
-        Нові заявки додаються до списку та зберігаються до оновлення сторінки.
+        Заявки зберігаються в браузері та залишаються після
+        оновлення сторінки.
       </p>
 
       <Section id="placement-requests" title="Список заявок">
@@ -106,6 +144,7 @@ export default function PlacementsPage({ requests, products, warehouses }) {
               }
             >
               <option value="">Усі склади</option>
+
               {warehouses.map((warehouse) => (
                 <option key={warehouse.id} value={warehouse.id}>
                   {warehouse.name}
@@ -123,9 +162,15 @@ export default function PlacementsPage({ requests, products, warehouses }) {
                 updateParam('sort', event.target.value)
               }
             >
-              <option value="default">За порядком додавання</option>
-              <option value="quantity-asc">Кількість: від меншої</option>
-              <option value="quantity-desc">Кількість: від більшої</option>
+              <option value="default">
+                За порядком додавання
+              </option>
+              <option value="quantity-asc">
+                Кількість: від меншої
+              </option>
+              <option value="quantity-desc">
+                Кількість: від більшої
+              </option>
             </select>
           </label>
         </div>
@@ -140,6 +185,7 @@ export default function PlacementsPage({ requests, products, warehouses }) {
               const product = products.find(
                 (item) => item.id === request.productId
               );
+
               const warehouse = warehouses.find(
                 (item) => item.id === request.warehouseId
               );
@@ -147,16 +193,22 @@ export default function PlacementsPage({ requests, products, warehouses }) {
               return (
                 <li key={request.id}>
                   <h3>Заявка {request.id}</h3>
+
                   <p>Товар: {product?.name || 'Не знайдено'}</p>
                   <p>Склад: {warehouse?.name || 'Не знайдено'}</p>
+
                   <p>
-                    Кількість: {request.quantity} {product?.unit || ''}
+                    Кількість: {request.quantity}{' '}
+                    {product?.unit || ''}
                   </p>
+
                   <p>Місць зберігання: {request.positions}</p>
                   <p>Примітка: {request.note}</p>
+
                   <Link to={`/placements/${request.id}`}>
                     Переглянути заявку
                   </Link>{' '}
+
                   <Link to={`/placements/${request.id}/edit`}>
                     Редагувати заявку
                   </Link>
